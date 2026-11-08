@@ -1,0 +1,573 @@
+<title>NamaSys Lead-Gen Pipeline — Architecture Reference</title>
+<style>
+  :root {
+    --bg: #f2f3f6;
+    --surface: #ffffff;
+    --surface-sunken: #eaecf1;
+    --ink: #1a1d24;
+    --ink-soft: #4b5163;
+    --ink-faint: #767d8f;
+    --line: #d7dae1;
+    --line-strong: #b9bec9;
+    --accent-agent: #a8681f;
+    --accent-agent-soft: #f3e6d3;
+    --accent-script: #16746c;
+    --accent-script-soft: #dcefec;
+    --accent-smtp: #3f628c;
+    --font-display: Charter, "Iowan Old Style", "Sitka Text", Georgia, "Noto Serif", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161b;
+      --surface: #1b1e25;
+      --surface-sunken: #21242c;
+      --ink: #edeff3;
+      --ink-soft: #a6acbb;
+      --ink-faint: #767d8f;
+      --line: #333844;
+      --line-strong: #454b59;
+      --accent-agent: #e3a75c;
+      --accent-agent-soft: #3a2f1e;
+      --accent-script: #4fc7ba;
+      --accent-script-soft: #1b2f2d;
+      --accent-smtp: #89a9cc;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161b;
+    --surface: #1b1e25;
+    --surface-sunken: #21242c;
+    --ink: #edeff3;
+    --ink-soft: #a6acbb;
+    --ink-faint: #767d8f;
+    --line: #333844;
+    --line-strong: #454b59;
+    --accent-agent: #e3a75c;
+    --accent-agent-soft: #3a2f1e;
+    --accent-script: #4fc7ba;
+    --accent-script-soft: #1b2f2d;
+    --accent-smtp: #89a9cc;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 56px;
+  }
+
+  a { color: var(--accent-script); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-script); outline-offset: 2px; }
+
+  code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    background: var(--surface-sunken);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.1em 0.42em;
+    white-space: nowrap;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 10px;
+  }
+
+  header.masthead { display: flex; flex-direction: column; gap: 14px; border-bottom: 1px solid var(--line); padding-bottom: 32px; }
+  header.masthead h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.9rem, 3.4vw, 2.5rem);
+    line-height: 1.15;
+    margin: 0;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  header.masthead p.dek {
+    font-size: 1.05rem;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.45rem;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  h2 .accent-agent-text { color: var(--accent-agent); }
+  h2 .accent-script-text { color: var(--accent-script); }
+
+  section { display: flex; flex-direction: column; gap: 18px; }
+  section > p.lede { color: var(--ink-soft); max-width: 68ch; margin: 0; }
+
+  /* ---- legend ---- */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 0.88rem;
+  }
+  .legend-group { display: flex; flex-direction: column; gap: 8px; }
+  .legend-group + .legend-group { border-left: 1px solid var(--line); padding-left: 28px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); }
+  .swatch { width: 20px; height: 12px; border-radius: 2px; flex: none; }
+  .swatch.node-agent-sw { background: var(--accent-agent-soft); border: 2px solid var(--accent-agent); }
+  .swatch.node-script-sw { background: var(--accent-script-soft); border: 2px solid var(--accent-script); }
+  .swatch.node-ext-sw { background: transparent; border: 1.5px dashed var(--ink-faint); }
+  .line-sw { width: 22px; height: 0; border-top: 2px solid; flex: none; }
+  .line-sw.agent { border-color: var(--accent-agent); }
+  .line-sw.script { border-color: var(--accent-script); }
+  .line-sw.smtp { border-color: var(--accent-smtp); border-top-style: dashed; }
+  .line-sw.human { border-color: var(--ink-faint); border-top-style: dashed; }
+
+  /* ---- figures ---- */
+  figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .fig-frame {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 18px;
+    overflow-x: auto;
+  }
+  .fig-frame svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+  figcaption { font-size: 0.9rem; color: var(--ink-soft); max-width: 72ch; }
+  figcaption strong { color: var(--ink); font-weight: 600; }
+
+  .node-fill { fill: var(--surface); }
+  .node-agent { stroke: var(--accent-agent); stroke-width: 2; fill: var(--accent-agent-soft); }
+  .node-script { stroke: var(--accent-script); stroke-width: 2; fill: var(--accent-script-soft); }
+  .node-external { fill: none; stroke: var(--ink-faint); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .node-file { fill: var(--surface-sunken); stroke: var(--ink-faint); stroke-width: 1.25; stroke-dasharray: 3 3; }
+  .node-human { fill: none; stroke: var(--ink-faint); stroke-width: 1.5; stroke-dasharray: 2 3; }
+
+  .t-title { font-family: var(--font-display); font-weight: 700; fill: var(--ink); }
+  .t-sub { font-family: var(--font-body); fill: var(--ink-soft); }
+  .t-mono { font-family: var(--font-mono); fill: var(--ink); }
+  .t-mono-soft { font-family: var(--font-mono); fill: var(--ink-soft); }
+  .t-arrow-label { font-family: var(--font-mono); fill: var(--ink-faint); font-size: 10.5px; }
+  .t-step { font-family: var(--font-mono); fill: var(--ink-soft); font-size: 11px; }
+
+  .arrow-agent { stroke: var(--accent-agent); fill: none; stroke-width: 2; }
+  .arrow-script { stroke: var(--accent-script); fill: none; stroke-width: 2; }
+  .arrow-smtp { stroke: var(--accent-smtp); fill: none; stroke-width: 2; stroke-dasharray: 5 4; }
+  .arrow-human { stroke: var(--ink-faint); fill: none; stroke-width: 1.5; stroke-dasharray: 3 3; }
+
+  /* ---- tables ---- */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.92rem; }
+  thead th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line-strong);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    color: var(--ink-soft);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td.primary { color: var(--ink); font-weight: 600; }
+  tbody td .mono { color: var(--ink); }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .tag { display: inline-block; font-size: 0.74rem; font-family: var(--font-mono); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .tag-agent { color: var(--accent-agent); background: var(--accent-agent-soft); border: 1px solid var(--accent-agent); }
+  .tag-script { color: var(--accent-script); background: var(--accent-script-soft); border: 1px solid var(--accent-script); }
+  .tag-setup { color: var(--ink-soft); background: var(--surface-sunken); border: 1px solid var(--line-strong); }
+
+  footer { border-top: 1px solid var(--line); padding-top: 20px; font-size: 0.85rem; color: var(--ink-faint); }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Architecture reference — NamaSys lead-gen pipeline</p>
+    <h1>Who does what, and how it's wired together</h1>
+    <p class="dek">
+      Fourteen Python scripts, one Claude Managed Agent, and three external systems
+      (Apollo, HubSpot, Gmail) — this maps every hop: which parts are the agent
+      reasoning, which are plain deterministic code, and which protocol connects
+      each pair (MCP, the Anthropic Sessions API, REST, or SMTP).
+    </p>
+  </header>
+
+  <section aria-label="Legend">
+    <div class="legend">
+      <div class="legend-group">
+        <div class="legend-item"><span class="swatch node-agent-sw"></span>Agent (LLM) step</div>
+        <div class="legend-item"><span class="swatch node-script-sw"></span>Deterministic script</div>
+        <div class="legend-item"><span class="swatch node-ext-sw"></span>External system / human</div>
+      </div>
+      <div class="legend-group">
+        <div class="legend-item"><span class="line-sw agent"></span>MCP tool call</div>
+        <div class="legend-item"><span class="line-sw script"></span>Anthropic API / REST call</div>
+        <div class="legend-item"><span class="line-sw smtp"></span>SMTP email</div>
+        <div class="legend-item"><span class="line-sw human"></span>Manual / human handoff</div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-label="Figure 1 — search to notify pipeline">
+    <h2>From <span class="mono">main.py</span> to the SDR's inbox</h2>
+    <p class="lede">The automatic part. Two independent Agent sessions do all the searching, enrichment,
+      and scoring against <strong>Apollo</strong> — but the agent only ever talks to Apollo through
+      MCP tool calls. Everything below the agent's final answer is plain Python.</p>
+
+    <figure>
+      <div class="fig-frame">
+        <svg viewBox="0 0 820 1300" role="img" aria-label="Flow from main.py through a Claude Managed Agent session that searches Apollo via MCP, down through CSV parsing, lead-ledger dedup, and SMTP delivery to the SDR's inbox.">
+          <defs>
+            <marker id="ah-agent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--accent-agent)"/>
+            </marker>
+            <marker id="ah-script" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--accent-script)"/>
+            </marker>
+            <marker id="ah-smtp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--accent-smtp)"/>
+            </marker>
+          </defs>
+
+          <!-- main.py -->
+          <rect class="node-script" x="210" y="12" width="240" height="56" rx="3"/>
+          <text class="t-mono t-title" x="330" y="36" font-size="14" text-anchor="middle">main.py</text>
+          <text class="t-mono-soft" x="330" y="54" font-size="10.5" text-anchor="middle">--mode daily | icp1 | full</text>
+
+          <line class="arrow-script" x1="330" y1="68" x2="330" y2="138" marker-end="url(#ah-script)"/>
+          <text class="t-arrow-label" x="345" y="107">invokes</text>
+
+          <!-- run_leadgen.py -->
+          <rect class="node-script" x="210" y="142" width="240" height="56" rx="3"/>
+          <text class="t-mono t-title" x="330" y="166" font-size="14" text-anchor="middle">run_leadgen.py</text>
+          <text class="t-mono-soft" x="330" y="184" font-size="10.5" text-anchor="middle">opens a Session, streams events</text>
+
+          <line class="arrow-agent" x1="330" y1="198" x2="330" y2="286" marker-end="url(#ah-agent)"/>
+          <text class="t-arrow-label" x="345" y="230">Anthropic Sessions API</text>
+          <text class="t-arrow-label" x="345" y="244">sessions.create + events.stream</text>
+
+          <!-- Agent region -->
+          <rect class="node-agent" x="210" y="290" width="240" height="230" rx="4"/>
+          <text class="t-title" x="330" y="316" font-size="15" text-anchor="middle" font-family="var(--font-display)">Managed Agent</text>
+          <text class="t-mono-soft" x="330" y="333" font-size="10" text-anchor="middle">claude-sonnet-4-6 · effort: medium</text>
+          <text class="t-mono-soft" x="330" y="349" font-size="9.5" text-anchor="middle">run twice — ICP 1 session + ICP 2 session</text>
+
+          <text class="t-step" x="222" y="374">1 · read company-profile memory (ICP 1)</text>
+          <text class="t-step" x="222" y="396">2 · search Apollo (orgs, people, postings)</text>
+          <text class="t-step" x="222" y="418">3 · reveal email — waterfall enrichment</text>
+          <text class="t-step" x="222" y="440">4 · score fit 0–100 vs. rubric</text>
+          <text class="t-step" x="222" y="462">5 · write ONE markdown lead table</text>
+          <text class="t-mono-soft" x="330" y="500" font-size="9.5" text-anchor="middle">autonomous · retries · never asks to proceed</text>
+
+          <!-- Apollo MCP side box -->
+          <line class="arrow-agent" x1="450" y1="405" x2="536" y2="405" marker-end="url(#ah-agent)" marker-start="url(#ah-agent)"/>
+          <text class="t-arrow-label" x="493" y="392" text-anchor="middle">MCP tool calls</text>
+          <text class="t-arrow-label" x="493" y="424" text-anchor="middle">⇄ results</text>
+          <rect class="node-external" x="540" y="350" width="220" height="110" rx="4"/>
+          <text class="t-title" x="650" y="382" font-size="13.5" text-anchor="middle" font-family="var(--font-display)">Apollo MCP server</text>
+          <text class="t-mono-soft" x="650" y="400" font-size="9.5" text-anchor="middle">mcp.apollo.io/mcp</text>
+          <text class="t-mono-soft" x="650" y="416" font-size="9.5" text-anchor="middle">OAuth 2.0 token, from the Vault</text>
+          <text class="t-mono-soft" x="650" y="434" font-size="9.5" text-anchor="middle">data source — read only, this phase</text>
+
+          <line class="arrow-agent" x1="330" y1="520" x2="330" y2="592" marker-end="url(#ah-agent)"/>
+          <text class="t-arrow-label" x="345" y="550">agent's final text</text>
+          <text class="t-arrow-label" x="345" y="564">(session ends)</text>
+
+          <!-- csv_writer.py -->
+          <rect class="node-script" x="210" y="592" width="240" height="56" rx="3"/>
+          <text class="t-mono t-title" x="330" y="616" font-size="14" text-anchor="middle">csv_writer.py</text>
+          <text class="t-mono-soft" x="330" y="634" font-size="10.5" text-anchor="middle">parse table → rows, dedupe by domain</text>
+
+          <line class="arrow-script" x1="330" y1="648" x2="330" y2="708" marker-end="url(#ah-script)"/>
+
+          <!-- lead_ledger.py -->
+          <rect class="node-script" x="210" y="712" width="240" height="56" rx="3"/>
+          <text class="t-mono t-title" x="330" y="736" font-size="14" text-anchor="middle">lead_ledger.py</text>
+          <text class="t-mono-soft" x="330" y="754" font-size="10.5" text-anchor="middle">filter out leads seen in any prior run</text>
+
+          <line class="arrow-script" x1="450" y1="740" x2="556" y2="740" marker-end="url(#ah-script)" marker-start="url(#ah-script)"/>
+          <text class="t-arrow-label" x="503" y="727" text-anchor="middle">reads +</text>
+          <text class="t-arrow-label" x="503" y="759" text-anchor="middle">updates</text>
+          <rect class="node-file" x="560" y="712" width="200" height="56" rx="3"/>
+          <text class="t-mono t-title" x="660" y="734" font-size="11.5" text-anchor="middle">state/</text>
+          <text class="t-mono t-title" x="660" y="750" font-size="11.5" text-anchor="middle">seen_leads.csv</text>
+
+          <line class="arrow-script" x1="330" y1="768" x2="330" y2="828" marker-end="url(#ah-script)"/>
+          <text class="t-arrow-label" x="345" y="802">new leads only</text>
+
+          <!-- output csv -->
+          <rect class="node-file" x="210" y="838" width="240" height="60" rx="3"/>
+          <text class="t-mono t-title" x="330" y="862" font-size="13" text-anchor="middle">output/</text>
+          <text class="t-mono t-title" x="330" y="880" font-size="13" text-anchor="middle">namasys_leads_*.csv</text>
+
+          <line class="arrow-script" x1="330" y1="898" x2="330" y2="950" marker-end="url(#ah-script)"/>
+
+          <!-- email_sender.py -->
+          <rect class="node-script" x="210" y="960" width="240" height="56" rx="3"/>
+          <text class="t-mono t-title" x="330" y="984" font-size="14" text-anchor="middle">email_sender.py</text>
+          <text class="t-mono-soft" x="330" y="1002" font-size="10.5" text-anchor="middle">attaches the new-leads CSV</text>
+
+          <line class="arrow-smtp" x1="330" y1="1016" x2="330" y2="1070" marker-end="url(#ah-smtp)"/>
+          <text class="t-arrow-label" x="345" y="1048">SMTP · STARTTLS</text>
+          <text class="t-arrow-label" x="345" y="1061">Gmail App Password</text>
+
+          <!-- gmail relay -->
+          <rect class="node-external" x="210" y="1080" width="240" height="56" rx="3"/>
+          <text class="t-title" x="330" y="1104" font-size="13.5" text-anchor="middle" font-family="var(--font-display)">Gmail SMTP relay</text>
+          <text class="t-mono-soft" x="330" y="1122" font-size="10" text-anchor="middle">smtp.gmail.com:587</text>
+
+          <line class="arrow-smtp" x1="330" y1="1136" x2="330" y2="1188" marker-end="url(#ah-smtp)"/>
+
+          <!-- SDR inbox -->
+          <rect class="node-human" x="210" y="1198" width="240" height="60" rx="3"/>
+          <text class="t-title" x="330" y="1222" font-size="13.5" text-anchor="middle" font-family="var(--font-display)">SDR inbox</text>
+          <text class="t-mono-soft" x="330" y="1240" font-size="10" text-anchor="middle">saksham.p@namasys.ai</text>
+        </svg>
+      </div>
+      <figcaption>
+        <strong>Figure 1.</strong> One run = two independent Agent sessions (ICP 1, ICP 2), merged back together
+        in Python. Apollo is reached only inside the amber region, only via MCP — nothing in this diagram calls
+        Apollo directly except the agent itself.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section aria-label="Figure 2 — human review to CRM destinations">
+    <h2>After the human reads the CSV: two separate, gated paths</h2>
+    <p class="lede">Nothing past the SDR's inbox happens automatically. Both destinations below require a
+      typed <span class="chip">y</span> — and they're independent: run one, both, or neither.</p>
+
+    <figure>
+      <div class="fig-frame">
+        <svg viewBox="0 0 900 660" role="img" aria-label="From SDR review, two independent human-gated branches: one splits the CSV and pushes with-email rows to HubSpot via REST while no-email rows go back to the SDR for review; the other filters high-score leads and pushes them to Apollo CRM through a second, save-only Agent session over MCP.">
+          <defs>
+            <marker id="ah-agent2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--accent-agent)"/>
+            </marker>
+            <marker id="ah-script2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--accent-script)"/>
+            </marker>
+            <marker id="ah-smtp2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--accent-smtp)"/>
+            </marker>
+            <marker id="ah-human2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-faint)"/>
+            </marker>
+          </defs>
+
+          <!-- human review -->
+          <rect class="node-human" x="310" y="12" width="280" height="56" rx="3"/>
+          <text class="t-title" x="450" y="36" font-size="13.5" text-anchor="middle" font-family="var(--font-display)">SDR reviews the CSV</text>
+          <text class="t-mono-soft" x="450" y="54" font-size="10" text-anchor="middle">outside the automation — email / Slack / however</text>
+
+          <line class="arrow-human" x1="450" y1="68" x2="450" y2="98"/>
+          <line class="arrow-human" x1="450" y1="98" x2="220" y2="150" marker-end="url(#ah-human2)"/>
+          <line class="arrow-human" x1="450" y1="98" x2="680" y2="150" marker-end="url(#ah-human2)"/>
+          <text class="t-arrow-label" x="450" y="90" text-anchor="middle" font-style="italic">either path, both, or neither</text>
+
+          <!-- LEFT: split_by_email.py -->
+          <rect class="node-script" x="100" y="162" width="240" height="56" rx="3"/>
+          <text class="t-mono t-title" x="220" y="186" font-size="13" text-anchor="middle">split_by_email.py</text>
+          <text class="t-mono-soft" x="220" y="204" font-size="9.5" text-anchor="middle">read-only — splits on Email column</text>
+
+          <line class="arrow-script" x1="180" y1="218" x2="140" y2="262" marker-end="url(#ah-script2)"/>
+          <line class="arrow-script" x1="260" y1="218" x2="300" y2="262" marker-end="url(#ah-script2)"/>
+
+          <rect class="node-file" x="60" y="265" width="160" height="50" rx="3"/>
+          <text class="t-mono t-title" x="140" y="286" font-size="10.5" text-anchor="middle">*_with_email.csv</text>
+          <text class="t-mono-soft" x="140" y="302" font-size="9" text-anchor="middle">has a verified email</text>
+
+          <rect class="node-file" x="230" y="265" width="160" height="50" rx="3"/>
+          <text class="t-mono t-title" x="310" y="286" font-size="10.5" text-anchor="middle">*_no_email.csv</text>
+          <text class="t-mono-soft" x="310" y="302" font-size="9" text-anchor="middle">no email found</text>
+
+          <line class="arrow-script" x1="140" y1="315" x2="140" y2="368" marker-end="url(#ah-script2)"/>
+          <line class="arrow-script" x1="310" y1="315" x2="310" y2="368" marker-end="url(#ah-script2)"/>
+
+          <rect class="node-script" x="40" y="372" width="200" height="56" rx="3"/>
+          <text class="t-mono t-title" x="140" y="394" font-size="12" text-anchor="middle">hubspot_sync.py</text>
+          <text class="t-mono-soft" x="140" y="412" font-size="9" text-anchor="middle">[y/N] gate · plain REST</text>
+
+          <rect class="node-script" x="220" y="372" width="200" height="56" rx="3"/>
+          <text class="t-mono t-title" x="320" y="392" font-size="11" text-anchor="middle">send_no_email_</text>
+          <text class="t-mono t-title" x="320" y="406" font-size="11" text-anchor="middle">for_review.py</text>
+
+          <line class="arrow-script" x1="140" y1="428" x2="140" y2="472" marker-end="url(#ah-script2)"/>
+          <text class="t-arrow-label" x="155" y="454">REST API</text>
+
+          <rect class="node-external" x="40" y="472" width="200" height="56" rx="3"/>
+          <text class="t-title" x="140" y="494" font-size="13" text-anchor="middle" font-family="var(--font-display)">HubSpot CRM</text>
+          <text class="t-mono-soft" x="140" y="512" font-size="9.5" text-anchor="middle">Company + Contact + Note</text>
+
+          <line class="arrow-smtp" x1="320" y1="428" x2="320" y2="472" marker-end="url(#ah-smtp2)"/>
+          <rect class="node-human" x="220" y="472" width="200" height="56" rx="3"/>
+          <text class="t-title" x="320" y="494" font-size="12.5" text-anchor="middle" font-family="var(--font-display)">SDR inbox, again</text>
+          <text class="t-mono-soft" x="320" y="512" font-size="9" text-anchor="middle">fills in / approves rows</text>
+
+          <path class="arrow-human" d="M320,528 L320,570 L70,570 L70,428" marker-end="url(#ah-human2)" fill="none"/>
+          <text class="t-arrow-label" x="195" y="562" text-anchor="middle">approved file, re-run manually</text>
+
+          <!-- RIGHT: save_to_apollo.py -->
+          <rect class="node-script" x="560" y="162" width="240" height="56" rx="3"/>
+          <text class="t-mono t-title" x="680" y="186" font-size="13" text-anchor="middle">save_to_apollo.py</text>
+          <text class="t-mono-soft" x="680" y="204" font-size="9.5" text-anchor="middle">filters Score ≥ 50 · [y/N] gate</text>
+
+          <line class="arrow-agent" x1="680" y1="218" x2="680" y2="266" marker-end="url(#ah-agent2)"/>
+
+          <rect class="node-agent" x="560" y="270" width="240" height="100" rx="4"/>
+          <text class="t-title" x="680" y="296" font-size="13" text-anchor="middle" font-family="var(--font-display)">Managed Agent</text>
+          <text class="t-mono-soft" x="680" y="313" font-size="9.5" text-anchor="middle">save-only kickoff — new session</text>
+          <text class="t-mono-soft" x="680" y="329" font-size="9.5" text-anchor="middle">does not search — saves exactly</text>
+          <text class="t-mono-soft" x="680" y="345" font-size="9.5" text-anchor="middle">the rows a human already approved</text>
+
+          <line class="arrow-agent" x1="680" y1="370" x2="680" y2="466" marker-end="url(#ah-agent2)"/>
+          <text class="t-arrow-label" x="695" y="410">MCP: apollo_accounts_create</text>
+          <text class="t-arrow-label" x="695" y="424">apollo_contacts_create</text>
+
+          <rect class="node-external" x="560" y="472" width="240" height="56" rx="3"/>
+          <text class="t-title" x="680" y="494" font-size="13" text-anchor="middle" font-family="var(--font-display)">Apollo CRM</text>
+          <text class="t-mono-soft" x="680" y="512" font-size="9.5" text-anchor="middle">Accounts + linked Contacts</text>
+        </svg>
+      </div>
+      <figcaption>
+        <strong>Figure 2.</strong> Apollo shows up a second time here — as a write <em>destination</em>,
+        through a second, save-only Agent session — never confused with the search sessions in Figure 1.
+        HubSpot never touches the agent at all; it's a direct REST integration.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section aria-label="Table: who does what">
+    <h2>Table A — every component, one line each</h2>
+    <p class="lede">All 14 scripts plus the agent itself, in three categories: things the agent reasons through,
+      deterministic Python, and one-time provisioning that isn't part of a normal run.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Component</th><th>Category</th><th>What it does</th><th>Run how often</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="primary mono">Managed Agent</td><td><span class="tag tag-agent">agent</span></td><td>Searches/scores/enriches leads via Apollo MCP; also saves pre-approved leads when given a save-only kickoff.</td><td>Inside every session</td></tr>
+          <tr><td class="primary mono">main.py</td><td><span class="tag tag-script">script</span></td><td>Entry point — picks mode, runs session(s), dedupes, writes CSV, emails the SDR.</td><td>Daily / weekly</td></tr>
+          <tr><td class="primary mono">run_leadgen.py</td><td><span class="tag tag-script">script</span></td><td>Opens & streams Agent sessions; holds the ICP1/ICP2 kickoff prompts; auto-approves stray tool confirmations.</td><td>Imported by main.py, save_to_apollo.py</td></tr>
+          <tr><td class="primary mono">csv_writer.py</td><td><span class="tag tag-script">script</span></td><td>The 17-column schema; parses the agent's markdown table into rows; dedupes by domain.</td><td>Imported everywhere</td></tr>
+          <tr><td class="primary mono">lead_ledger.py</td><td><span class="tag tag-script">script</span></td><td>Permanent seen-leads ledger; filters out anything surfaced in a previous run.</td><td>Imported by main.py</td></tr>
+          <tr><td class="primary mono">email_sender.py</td><td><span class="tag tag-script">script</span></td><td>SMTP sending — the main leads email and the no-email review-request email.</td><td>Imported by main.py, send_no_email_for_review.py</td></tr>
+          <tr><td class="primary mono">split_by_email.py</td><td><span class="tag tag-script">script</span></td><td>Read-only split of a CSV into with-email / no-email files, purely on the Email column.</td><td>Manual, after main.py</td></tr>
+          <tr><td class="primary mono">send_no_email_for_review.py</td><td><span class="tag tag-script">script</span></td><td>Emails the no-email CSV to the SDR to fill in / approve rows before HubSpot.</td><td>Manual, when needed</td></tr>
+          <tr><td class="primary mono">hubspot_sync.py</td><td><span class="tag tag-script">script</span></td><td>Plain REST push into HubSpot — Company always, Contact + Note when an email exists.</td><td>Manual, human-confirmed</td></tr>
+          <tr><td class="primary mono">save_to_apollo.py</td><td><span class="tag tag-script">script</span></td><td>Filters Score ≥ 50, previews, then opens a save-only Agent session to write Apollo CRM.</td><td>Manual, human-confirmed</td></tr>
+          <tr><td class="primary mono">config.py</td><td><span class="tag tag-script">script</span></td><td>Loads .env; exposes constants and require_*_config() validators.</td><td>Imported everywhere</td></tr>
+          <tr><td class="primary mono">setup_agent.py</td><td><span class="tag tag-setup">setup</span></td><td>Creates the Environment + Vault + Agent from the YAML files.</td><td>Once, or full reset</td></tr>
+          <tr><td class="primary mono">update_agent.py</td><td><span class="tag tag-setup">setup</span></td><td>Pushes a new Agent version after the YAML system prompt changes.</td><td>After each YAML edit</td></tr>
+          <tr><td class="primary mono">setup_namasys_memory.py</td><td><span class="tag tag-setup">setup</span></td><td>Seeds the Memory Store from namasys_company_profile.md.</td><td>Once, or on profile refresh</td></tr>
+          <tr><td class="primary mono">apollo_oauth_connect.py</td><td><span class="tag tag-setup">setup</span></td><td>OAuth 2.0 + PKCE dance; stores the Apollo token in the Vault.</td><td>Once, or to reconnect</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-label="Table: agent steps">
+    <h2>Table B — exactly what the agent does</h2>
+    <p class="lede">The agent runs under two different kickoffs, and does different work under each. This is the
+      full list of what "the agent" means in Figures 1 and 2.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Kickoff</th><th>Step</th><th>Detail</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="primary">Search<br><span class="mono" style="font-size:0.8em">(ICP 1 / ICP 2)</span></td><td>Ground itself</td><td>Reads the read-only company-profile Memory Store before judging ICP 1 fit.</td></tr>
+          <tr><td class="primary">Search</td><td>Find candidates</td><td>Apollo org/people search; job-postings search for ICP 2's hiring signal.</td></tr>
+          <tr><td class="primary">Search</td><td>Reveal email</td><td>Runs the waterfall email-enrichment tool, then polls for the async result — mandatory, never optional.</td></tr>
+          <tr><td class="primary">Search</td><td>Score</td><td>0–100 against the ICP rubric; writes a transparent Score Breakdown, flags anything under 50.</td></tr>
+          <tr><td class="primary">Search</td><td>Report</td><td>Returns exactly one markdown table, "-" for any blank cell, no narration before or after.</td></tr>
+          <tr><td class="primary">Save<br><span class="mono" style="font-size:0.8em">(save_to_apollo.py)</span></td><td>Accept the list</td><td>Receives the exact human-approved rows in the kickoff message — does not search or re-verify anything.</td></tr>
+          <tr><td class="primary">Save</td><td>Write Apollo</td><td>Calls the Accounts and Contacts create tools for each row, linking Contacts to their Account.</td></tr>
+          <tr><td class="primary">Both</td><td>Stay unattended</td><td>Runs autonomously (never pauses to ask permission), retries transient tool errors, auto-continues past any stray "ask" permission event.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-label="Table: Apollo's two roles">
+    <h2>Table C — what Apollo is actually used for</h2>
+    <p class="lede">Apollo plays two different roles in this pipeline, and Python code never talks to it directly
+      for lead data — only the agent does, and only over MCP.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Role</th><th>Triggered by</th><th>Mechanism</th><th>What happens</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="primary">Data source (read)</td><td class="mono">main.py → search sessions</td><td>Apollo MCP tool calls</td><td>Agent searches, enriches, and scores — our code only ever reads the agent's finished markdown text.</td></tr>
+          <tr><td class="primary">CRM destination (write)</td><td class="mono">save_to_apollo.py → save session</td><td>Apollo MCP tool calls</td><td>Pre-approved (Score ≥ 50, human-confirmed) leads become Accounts + Contacts in Apollo's own CRM.</td></tr>
+          <tr><td class="primary">Auth setup (one-time)</td><td class="mono">apollo_oauth_connect.py</td><td>Direct HTTPS to Apollo's OAuth endpoints</td><td>Registers a client, exchanges a code for tokens, stores them in the Vault — the one place raw Python touches Apollo, and only for auth, never lead data.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-label="Table: connections">
+    <h2>Table D — every connection, by protocol</h2>
+    <p class="lede">The full answer to "how is everything wired together" — five distinct mechanisms, no two components talking to each other more than one way.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>From → To</th><th>Mechanism</th><th>Auth</th><th>What flows</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="primary">run_leadgen.py → Managed Agent</td><td class="mono">Anthropic Sessions API (SSE)</td><td>ANTHROPIC_API_KEY</td><td>Kickoff message in, streamed agent events + final text out.</td></tr>
+          <tr><td class="primary">Managed Agent ⇄ Apollo</td><td class="mono">MCP (Model Context Protocol)</td><td>OAuth 2.0 token, from the Vault</td><td>Search / enrich / create tool calls and their results — the only path lead data takes to or from Apollo.</td></tr>
+          <tr><td class="primary">apollo_oauth_connect.py → Apollo</td><td class="mono">Direct HTTPS (urllib)</td><td>PKCE + Dynamic Client Registration</td><td>One-time: registers a client, gets an access + refresh token.</td></tr>
+          <tr><td class="primary">hubspot_sync.py → HubSpot</td><td class="mono">Plain REST (urllib)</td><td>Bearer token, Private App</td><td>Upserts Companies/Contacts, creates Notes — no agent involved at all.</td></tr>
+          <tr><td class="primary">email_sender.py → Gmail</td><td class="mono">SMTP (smtplib, STARTTLS)</td><td>Gmail App Password</td><td>Lead CSV or review-request CSV, as an attachment, to the SDR.</td></tr>
+          <tr><td class="primary">run_leadgen.py → Memory Store</td><td class="mono">Session resource mount (read-only)</td><td>Vault-scoped, per session</td><td>namasys_company_profile.md, grounding ICP 1 judgment.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Generated from a live read of every script in <span class="mono">lead  agent/</span> and cross-checked
+    against <span class="mono">HANDOFF.md</span> — reflects the pipeline as of 2026-08-13, after the
+    HubSpot company-upsert fix (search-then-create/update, in place of the batch-upsert-by-domain call
+    HubSpot's portal wouldn't allow).
+  </footer>
+
+</div>

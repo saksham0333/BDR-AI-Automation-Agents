@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Bash(python -m py_compile apollo_oauth_connect.py setup_agent.py update_agent.py config.py csv_writer.py email_sender.py run_leadgen.py main.py)",
+      "Bash(rm -rf __pycache__)",
+      "Bash(python -m py_compile apollo_oauth_connect.py)",
+      "Bash(rm -f output/*_score100_*.csv)",
+      "Bash(python split_score100.py output/namasys_leads_full_2026-08-06_1417.csv)"
+    ]
+  }
+}
