@@ -1,15 +1,8 @@
-# NamaSys Lead Generation Pipeline — Project Handoff Document
-
-**Prepared for:** a fresh AI assistant (or human) with zero memory of the build conversation.
-**Ground truth verified against:** actual files on disk as of **2026-08-07**, not just recollection.
-**Working directory:** `C:\Users\saksh\OneDrive\Desktop\lead  agent` (note: two spaces between "lead" and "agent" in the folder name — this is real, not a typo, and matters for any path you construct).
-**Not a git repository** — there is no version control on this project. Treat file edits as directly mutating the only copy that exists.
-
----
+# Lead Generation Pipeline — Project Handoff Document
 
 # Project Overview
 
-This is a Python automation pipeline for **NamaSys Analytics** (an AI-driven GTM/automation service provider) that:
+This is a Python automation pipeline (an AI-driven GTM/automation service provider) that:
 
 1. Uses a **Claude Managed Agent** (Anthropic's server-hosted agent product) connected to **Apollo.io's MCP server** to search for and qualify B2B sales leads against two Ideal Customer Profiles (ICPs).
 2. Produces a structured CSV of leads, deduplicated against everything found in previous runs.
@@ -18,7 +11,7 @@ This is a Python automation pipeline for **NamaSys Analytics** (an AI-driven GTM
 5. Can push qualified leads into **Apollo's own CRM** (as Accounts/Contacts) — a separate, human-approved step, never automatic.
 6. Can push leads into **HubSpot CRM** (as Companies/Contacts/Notes) — a separate script, built but **not yet live-tested** against a real HubSpot account.
 
-The user (Saksham, `saksham.p@namasys.ai`, personal Gmail `sakshampundeer333@gmail.com` used for SMTP sending) is building this as an internal NamaSys tool, iterating live in a single long conversation, testing against real Apollo/Anthropic accounts throughout.
+The user (Saksham, `---`, personal Gmail `---` used for SMTP sending) is building this as an internal NamaSys tool, iterating live in a single long conversation, testing against real Apollo/Anthropic accounts throughout.
 
 ---
 
